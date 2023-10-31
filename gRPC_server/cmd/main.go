@@ -10,6 +10,7 @@ import (
 	"io"
 	"log"
 	"net"
+	"time"
 
 	"google.golang.org/grpc"
 
@@ -25,7 +26,7 @@ func main() {
 		log.Fatalf("error: can't listen - %s", err)
 	}
 
-	srv := grpc.NewServer()
+	srv := grpc.NewServer(grpc.UnaryInterceptor(timingInterceptor))
 	var u Rides
 	pb.RegisterRidesServer(srv, &u)
 	reflection.Register(srv)
@@ -50,6 +51,15 @@ func (r *Rides) Start(ctx context.Context, req *pb.StartRequest) (*pb.StartRespo
 	return &resp, nil
 }
 
+func timingInterceptor(ctx context.Context, req interface{}, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (interface{}, error) {
+	start := time.Now()
+	defer func() {
+		duration := time.Since(start)
+		log.Printf("info: %s took %v", info.FullMethod, duration)
+	}()
+
+	return handler(ctx, req)
+}
 func (r *Rides) Location(stream pb.Rides_LocationServer) error {
 	count := int64(0)
 	driverID := ""
