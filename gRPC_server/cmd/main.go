@@ -2,7 +2,10 @@ package main
 
 import (
 	"context"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/metadata"
 	"google.golang.org/grpc/reflection"
+	"google.golang.org/grpc/status"
 	"log"
 	"net"
 
@@ -31,6 +34,11 @@ func main() {
 	}
 }
 func (r *Rides) Start(ctx context.Context, req *pb.StartRequest) (*pb.StartResponse, error) {
+	md, ok := metadata.FromIncomingContext(ctx)
+	if !ok {
+		return nil, status.Errorf(codes.Unauthenticated, "no metadata")
+	}
+	log.Printf("info:key is %s", md["key"])
 	// TODO: Validate req
 	resp := pb.StartResponse{
 		Id: req.Id,
